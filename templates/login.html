@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#101915">
+    <title>Sign in · Northstar</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body class="auth-page">
+    <main class="auth-panel">
+      <a class="brand auth-brand" href="{{ url_for('login') }}">
+        <span class="brand-mark" aria-hidden="true">N</span>
+        <span>NORTHSTAR<span class="brand-subtitle">SERVICE CONSOLE</span></span>
+      </a>
+      <p class="eyebrow">ACCOUNT ACCESS</p>
+      <h1>Sign in<span class="heading-period">.</span></h1>
+      <p class="auth-copy">Choose your sign-in method.</p>
+      {% if local_configured %}
+      <form class="login-form" method="post" action="{{ url_for('login_local') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="email">Username or email</label>
+        <input id="email" name="email" type="text" autocomplete="username" required autofocus>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button type="submit">Sign in <span aria-hidden="true">→</span></button>
+      </form>
+      {% endif %}
+      {% if okta_configured %}
+      <div class="auth-divider"><span>OR</span></div>
+      <a class="okta-signin" href="{{ url_for('login_okta') }}">Continue with Okta <span aria-hidden="true">→</span></a>
+      {% endif %}
+      {% if not local_configured and not okta_configured %}
+      <p class="form-alert error" role="alert">No sign-in method is configured. Set local credentials or Okta settings and restart the service.</p>
+      {% endif %}
+      <p class="auth-footnote">Local credentials are configured by the service administrator.</p>
+    </main>
+  </body>
+</html>
