@@ -2,6 +2,8 @@ import os
 import platform
 import secrets
 import time
+import json
+import logging
 from functools import wraps
 from datetime import datetime, timezone
 from hmac import compare_digest
@@ -10,6 +12,7 @@ from authlib.integrations.flask_client import OAuth
 from flask import Flask, abort, jsonify, redirect, render_template, request, session, url_for
 
 app = Flask(__name__)
+app.logger.setLevel(getattr(logging, os.environ.get("LOG_LEVEL", "INFO").upper(), logging.INFO))
 app.config.update(
     SECRET_KEY=os.environ.get("SECRET_KEY") or secrets.token_hex(32),
     SESSION_COOKIE_HTTPONLY=True,
@@ -140,9 +143,14 @@ def auth_callback():
         abort(503)
     app.logger.info("Received Okta authorization callback")
     token = oauth.okta.authorize_access_token()
-    claims = token.get("userinfo") or oauth.okta.userinfo()
+    claims = oauth.okta.userinfo(token=token)
     email = str(claims.get("email", "")).strip().lower()
     groups = claims.get("groups", [])
+    if app.logger.isEnabledFor(logging.DEBUG):
+        app.logger.debug("Okta UserInfo claims: %s", json.dumps(dict(claims), sort_keys=True, default=str))
+    if claims.get("email_verified") is not True:
+        app.logger.warning("Rejected Okta sign-in because email_verified is not true for %s", email or "<missing>")
+        abort(403, description="Okta must confirm this email address as verified to access this application.")
     if email not in OKTA_ALLOWED_EMAILS:
         app.logger.warning("Rejected Okta sign-in for email outside the configured allowlist: %s", email or "<missing>")
         abort(403, description="This Okta account is not permitted to access this application.")

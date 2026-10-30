@@ -13,6 +13,7 @@ services:
       OKTA_CLIENT_SECRET: ${OKTA_CLIENT_SECRET:?Set OKTA_CLIENT_SECRET in .env}
       OKTA_ADMIN_GROUP: ${OKTA_ADMIN_GROUP:-AuthMantra-Admins}
       OKTA_ALLOWED_EMAILS: ${OKTA_ALLOWED_EMAILS:-ashish@authmantra.com,poc@authmantra.com}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       LOCAL_ADMIN_EMAIL: ${LOCAL_ADMIN_EMAIL:-ashish@authmantra.com}
       LOCAL_ADMIN_PASSWORD: ${LOCAL_ADMIN_PASSWORD:-}
       LOCAL_USER_EMAIL: ${LOCAL_USER_EMAIL:-poc@authmantra.com}
@@ -31,7 +32,7 @@ services:
       - "-"
       - --capture-output
       - --log-level
-      - ${LOG_LEVEL:-info}
+      - ${LOG_LEVEL:-debug}
       - app:app
     restart: unless-stopped
     healthcheck:
