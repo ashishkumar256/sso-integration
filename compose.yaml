@@ -23,7 +23,11 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-AdminPass123!}
       TEST_USER_EMAIL: ${TEST_USER_EMAIL:-poc@authmantra.com}
       TEST_USER_PASSWORD: ${TEST_USER_PASSWORD:-TestPass123!}
-      FRONTEND_ORIGIN: http://localhost:5173
+      FRONTEND_ORIGIN: http://localhost:3000
+      OKTA_ISSUER: ${OKTA_ISSUER:-}
+      OKTA_CLIENT_ID: ${OKTA_CLIENT_ID:-}
+      OKTA_CLIENT_SECRET: ${OKTA_CLIENT_SECRET:-}
+      OKTA_REDIRECT_URI: ${OKTA_REDIRECT_URI:-http://localhost:8000/api/auth/okta/callback}
     ports:
       - "8000:8000"
     depends_on:
@@ -45,7 +49,7 @@ services:
         VITE_TEST_USER_EMAIL: ${TEST_USER_EMAIL:-poc@authmantra.com}
         VITE_TEST_USER_PASSWORD: ${TEST_USER_PASSWORD:-TestPass123!}
     ports:
-      - "5173:80"
+      - "3000:80"
     depends_on:
       backend:
         condition: service_healthy

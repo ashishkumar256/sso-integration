@@ -132,6 +132,40 @@ export default function App() {
   const [error, setError] = useState('')
   const [session, setSession] = useState(null)
 
+  useEffect(() => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1))
+    const oktaToken = fragment.get('access_token')
+    const oktaError = fragment.get('auth_error')
+    if (oktaError) {
+      window.history.replaceState(null, '', window.location.pathname)
+      const errorMessages = {
+        okta_not_configured: 'Okta sign-in is not configured on the backend yet.',
+        okta_provider_error: 'Okta did not authorize this sign-in. Check the Okta app settings and try again.',
+        okta_state_invalid: 'The Okta sign-in session expired or could not be verified. Try signing in again.',
+        okta_nonce_invalid: 'Okta identity verification failed. Try signing in again.',
+        okta_subject_mismatch: 'The Okta ID token and UserInfo response identify different users. Contact your administrator.',
+        okta_email_unverified: 'Verify your email address in Okta, then try signing in again.',
+        okta_user_not_linked: 'Your Okta email does not match an existing AuthMantra user account.',
+        okta_exchange_failed: 'The backend could not exchange the Okta authorization code. Check the Okta client settings and callback URI.',
+        okta_token_invalid: 'The backend could not validate the Okta identity token. Check the issuer and authorization server configuration.',
+      }
+      setError(errorMessages[oktaError] || 'Okta sign-in could not be completed. Check your account and try again.')
+      return
+    }
+    if (oktaToken) {
+      window.history.replaceState(null, '', window.location.pathname)
+      setLoading(true)
+      fetch(`${apiUrl}/api/auth/me`, { headers: { Authorization: `Bearer ${oktaToken}` } })
+        .then(async (response) => {
+          const user = await response.json()
+          if (!response.ok) throw new Error(user.detail || 'Okta sign-in could not be completed.')
+          setSession({ access_token: oktaToken, user })
+        })
+        .catch((exception) => setError(exception.message || 'Okta sign-in could not be completed.'))
+        .finally(() => setLoading(false))
+    }
+  }, [])
+
   function chooseAccount(nextMode) {
     setMode(nextMode)
     setEmail(accounts[nextMode].email)
@@ -204,6 +238,10 @@ export default function App() {
               <button className={mode === 'admin' ? 'selected' : ''} onClick={() => chooseAccount('admin')} role="tab" aria-selected={mode === 'admin'}><ShieldCheck size={16} /> Admin</button>
               <button className={mode === 'user' ? 'selected' : ''} onClick={() => chooseAccount('user')} role="tab" aria-selected={mode === 'user'}><UserRound size={16} /> POC user</button>
             </div>
+            <>
+              <button className="okta-button" type="button" onClick={() => window.location.assign(`${apiUrl}/api/auth/okta/login`)}><ShieldCheck size={17} /> Continue with Okta <ArrowRight size={16} /></button>
+              <div className="auth-divider"><span>OR USE EMAIL</span></div>
+            </>
             <form onSubmit={handleSubmit}>
               <label htmlFor="email">Email address</label>
               <div className="input-wrap"><span className="field-icon"><UserRound size={17} /></span><input id="email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>

@@ -68,6 +68,35 @@ def test_login_rejects_invalid_password():
     assert response.status_code == 401
 
 
+def test_okta_login_requires_configuration(monkeypatch):
+    monkeypatch.delenv("OKTA_ISSUER", raising=False)
+    monkeypatch.delenv("OKTA_CLIENT_ID", raising=False)
+    monkeypatch.delenv("OKTA_CLIENT_SECRET", raising=False)
+    response = client.get("/api/auth/okta/login")
+    assert response.status_code == 307
+    assert response.headers["location"] == "http://localhost:3000/#auth_error=okta_not_configured"
+
+
+def test_okta_userinfo_requires_verified_email_and_matching_subject():
+    id_token_claims = {"sub": "okta-user-123"}
+    assert main_module.userinfo_error_reason(
+        id_token_claims,
+        {"sub": "okta-user-123", "email": "person@example.com", "email_verified": True},
+    ) is None
+    assert main_module.userinfo_error_reason(
+        id_token_claims,
+        {"sub": "okta-user-123", "email": "person@example.com", "email_verified": False},
+    ) == "okta_email_unverified"
+    assert main_module.userinfo_error_reason(
+        id_token_claims,
+        {"sub": "okta-user-123", "email": "person@example.com"},
+    ) == "okta_email_unverified"
+    assert main_module.userinfo_error_reason(
+        id_token_claims,
+        {"sub": "different-user", "email": "person@example.com", "email_verified": True},
+    ) == "okta_subject_mismatch"
+
+
 def test_admin_can_list_users():
     token = create_access_token(1, "admin@example.com", "admin")
     response = client.get("/api/users", headers={"Authorization": f"Bearer {token}"})
